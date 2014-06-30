@@ -49,24 +49,19 @@
        (= action :put)    client/put
        :else nil))
 
-(defn json-request
-  [action url-prefix opts]
-  (let 
-    [fn-http (convert-action-to-func action)
-     opts (if (not (contains? opts :accept)) 
-            (assoc opts :accept "json") opts)]
-    (fn-http (make-url url-prefix) opts)))
+(defn- resp-example1
+  [res]
+  (print res)
+ (map #(:ap_service_uuid %) res))
+ 
 
-(defn dorequest [ opts ]
+(defn dorequest [ {:keys [url action fn-req resource] :as opts}]
   (let 
     [
-     http-opts (dissoc opts :url :action :fn-req)
-     url (:url opts)
-     action (:action opts)
-     fn-req (:fn-req opts)
-     fn-http (convert-action-to-func action)]
-    (parse-string (:body (fn-http url http-opts)))))
-
+     http-opts(dissoc opts :url :action :fn-req :resource)
+     http-url (if (empty? url) (make-url resource) url)
+     fn-http  (convert-action-to-func action)]
+     (fn-req (parse-string (:body (fn-http http-url http-opts))))))
 
 (defn -main
   [& args]
@@ -75,6 +70,7 @@
     (dorequest
       { 
        :action :get
-       :url (make-url "sas")
+       :fn-req resp-example1
+       :resource "sas"
        :query-params {:sa_id sa_no}})))
 
