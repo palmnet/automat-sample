@@ -1,5 +1,6 @@
 (ns automat-sample.core
   (:require 
+    [cheshire.core :refer :all]
     [clojurewerkz.neocons.rest :as nr]
     [clojurewerkz.neocons.rest.nodes :as nn]
     [clojurewerkz.neocons.rest.relationships :as nrl]
@@ -39,27 +40,41 @@
   [prefix]
     (str baseurl "/" prefix ))
 
-(defmacro defscinario 
-
-(defn json-request
-  [action url-prefix opts]
-  (let 
-    [fn-http 
-     (cond 
+(defn convert-action-to-func
+  [action]
+   (cond 
        (= action :get)    client/get
        (= action :post)   client/post
        (= action :delete) client/delete
        (= action :put)    client/put
-       :else nil)
-     opts (if (not (contains? opts :accept)) (assoc opts :accept "json") opts )]
+       :else nil))
+
+(defn json-request
+  [action url-prefix opts]
+  (let 
+    [fn-http (convert-action-to-func action)
+     opts (if (not (contains? opts :accept)) 
+            (assoc opts :accept "json") opts)]
     (fn-http (make-url url-prefix) opts)))
+
+(defn dorequest [ opts ]
+  (let 
+    [
+     http-opts (dissoc opts :url :action :fn-req)
+     url (:url opts)
+     action (:action opts)
+     fn-req (:fn-req opts)
+     fn-http (convert-action-to-func action)]
+    (parse-string (:body (fn-http url http-opts)))))
+
 
 (defn -main
   [& args]
   (let 
-    [sa_no "SA000000006"
-     res (json-request 
-           :get "sas" 
-           {:query-params {:sa_id sa_no}})]
-    (println res)))
+    [sa_no "SA000000006"]
+    (dorequest
+      { 
+       :action :get
+       :url (make-url "sas")
+       :query-params {:sa_id sa_no}})))
 
